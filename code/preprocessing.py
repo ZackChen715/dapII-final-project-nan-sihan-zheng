@@ -144,6 +144,117 @@ call_clean = call_clean.drop(columns=["L_HOOD", "S_HOOD_ALT_NAMES"])
 
 call_clean = call_clean[call_clean["neighborhood"].notna()].copy()
 
+call_clean["final_call_type_clean"] = (
+    call_clean["Final Call Type"]
+    .astype(str)
+    .str.upper()
+    .str.strip()
+)
+
+CATEGORY_KEYWORDS = {
+
+    "Mental Health": [
+        "MENTAL",
+        "BEHAVIOR",
+        "BEHAVIOURAL",
+        "EMOTIONAL",
+        "CRISIS",
+        "SUICIDE",
+        "SELF HARM",
+        "PSYCH",
+        "PSYCHIATRIC",
+        "ERRATIC",
+        "CARE",
+        "PERSON IN CRISIS",
+        "THREATENING SUICIDE",
+        "EMOTIONAL DISTRESS",
+        "ASSIST",
+        "HELP",
+        "NEEDS ASSISTANCE"
+    ],
+
+    "Substance Use": [
+        "OVERDOSE",
+        "NARCOTIC",
+        "DRUG",
+        "SUBSTANCE",
+        "INTOX",
+        "INTOXICATED",
+        "ALCOHOL",
+        "DRUNK",
+        "HEROIN",
+        "FENTANYL",
+        "NARCAN",
+        "PASSED OUT",
+        "PERSON USING DRUGS"
+    ],
+
+    "Medical": [
+        "MEDICAL",
+        "UNCONSCIOUS",
+        "SEIZURE",
+        "CARDIAC",
+        "BREATHING",
+        "INJURY",
+        "ILL",
+        "EMS",
+        "PERSON DOWN",
+        "FAINT",
+        "BLEEDING"
+    ],
+
+    "Suspicious Person": [
+        "SUSPICIOUS",
+        "LOITER",
+        "TRESPASS",
+        "UNKNOWN PERSON",
+        "PROWLER"
+    ],
+
+    "Conflict Resolution": [
+        "DISTURBANCE",
+        "DISORDERLY",
+        "ARGUMENT",
+        "VERBAL",
+        "DISPUTE",
+        "FIGHT",
+        "ASSAULT",
+        "DOMESTIC",
+        "THREAT",
+        "FAMILY DISTURBANCE",
+        "NEIGHBOR DISPUTE"
+    ],
+
+    "Service Connection": [
+        "WELFARE",
+        "CHECK",
+        "RESOURCE",
+        "HOUSING",
+        "HOMELESS",
+        "SOCIAL",
+        "SERVICES",
+        "REQUEST FOR RESOURCES"
+    ]
+}
+
+def regroup_call_type(call_type: str) -> str:
+    if pd.isna(call_type) or call_type.strip() == "":
+        return "Unknown"
+
+    call_type = call_type.upper()
+
+    for category, keywords in CATEGORY_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in call_type:
+                return category
+
+    return "OTHER"
+
+call_clean["call_category"] = (
+    call_clean["Final Call Type"]
+    .apply(regroup_call_type)
+)
+
 call_clean.to_csv(
     script_dir / '../data/derived-data/call_clean.csv',
     index=False

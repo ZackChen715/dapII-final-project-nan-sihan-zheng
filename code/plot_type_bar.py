@@ -7,7 +7,7 @@ script_dir = Path(__file__).parent
 clean_call = script_dir / '../data/derived-data/call_clean.csv'
 call_clean = pd.read_csv(clean_call)
 
-call_type_col = "Final Call Type"  
+call_type_col = "call_category"  
 
 dist_df = (
     call_clean
