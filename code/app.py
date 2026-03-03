@@ -5,6 +5,15 @@ import geopandas as gpd
 import pydeck as pdk
 import streamlit as st
 from pathlib import Path
+from pathlib import Path
+
+# Import necessary libraries for plotting
+import matplotlib.pyplot as plt
+import altair as alt
+
+# Import the plotting functions
+from plot_nationwide_map import plot_nationwide_map
+from plot_nationwide_call_type import plot_nationwide_call_type
 
 st.set_page_config(
     layout="wide",
@@ -131,85 +140,143 @@ def overall_center(centroids: pd.DataFrame) -> tuple[float, float]:
 plot_df = load_plot_df(PLOT_DF_PATH)
 centroids = load_neighborhood_centroids(NEIGHBORHOODS_SHP_PATH)
 
-# Top layout
-row1_left, row1_right = st.columns((2, 3))
-
-with row1_left:
-    st.title("Seattle CARE Calls Dashboard")
-    hour_selected = st.slider(
-        "Select hour of dispatch",
-        min_value=0,
-        max_value=23,
-        value=int(st.session_state.get("dispatch_hour", 14)),
-        key="dispatch_hour",
-    )
-
-with row1_right:
+# Define individual pages as functions
+def home_page():
+    st.title("Welcome to the Seattle CARE Calls Dashboard")
     st.write(
         """
-        ##
-        Explore how **the number of calls varies over time** across Seattle.
+        This application provides insights into Seattle CARE calls data.
+        
+        **CARE** (Community Assistance & Response Engagement)
+        Responsibility:
+        - Co-response with behavioral health professionals 
+        - Designed to respond to mental health crises 
+        - Reduce reliance on traditional police response
 
-        - Slide to pick an **hour window** (e.g., 14 = 14:00–15:00).
-        - Each 3D column is anchored at a **neighborhood centroid**.
-        - Column height represents **call volume** in that hour.
+        - Use the **Dashboard** page to explore the data visually.
+        - Adjust the hour slider to see how call volumes vary by time.
+        - Hover over the 3D map to view details about each neighborhood.
         """
     )
+    st.sidebar.success("You are on the Home page.")
 
-# Aggregate + merge with centroids
-calls_nb = agg_calls_by_hour_neighborhood(plot_df, hour_selected)
+    # First chart: Nationwide Community Responder Programs
+    st.subheader("Why Seattle?")
+    st.write("### A large, mature city with an established community responder program")
+    st.write("Call volume is not among the highest nationwide")
+    plot_nationwide_map()  # Call the function to generate the map
+    script_dir = Path(__file__).parent
+    image_path = script_dir / "../data/derived-data/national_programs_map.png"
+    st.image(str(image_path), use_column_width=True)
 
-# merge 
-merged = centroids.merge(
-    calls_nb,
-    left_on=NEIGHBORHOOD_COL_SHAPE,
-    right_on=NEIGHBORHOOD_COL_DATA,
-    how="left",
-)
-merged["calls"] = merged["calls"].fillna(0).astype(int)
+    # Second chart: Call Categories
+    st.write("### CARE primarily responding to behavioral and psychological crisis")
+    st.write("Involving social support and de-escalation")
+    plot_nationwide_call_type()  # Call the function to generate the chart
+    st.image("national_call_categories.png", use_column_width=True)
 
-# Center view
-center_lat, center_lon = overall_center(centroids)
+def call_time_page():
+    # Top layout
+    row1_left, row1_right = st.columns((2, 3))
 
-st.write(f"**All Seattle from {hour_selected}:00 to {(hour_selected + 1) % 24}:00**")
+    with row1_left:
+        st.title("Seattle CARE Calls Dashboard")
+        hour_selected = st.slider(
+            "Select hour of dispatch",
+            min_value=0,
+            max_value=23,
+            value=int(st.session_state.get("dispatch_hour", 14)),
+            key="dispatch_hour",
+        )
 
-# Pydeck layer
-max_calls = merged["calls"].max()
+    with row1_right:
+        st.write(
+            """
+            ##
+            Explore how **the number of calls varies over time** across Seattle.
 
-layer = pdk.Layer(
-    "ColumnLayer",
-    data=merged,
-    get_position=["lon", "lat"],
-    get_elevation="calls",
-    elevation_scale=ELEVATION_SCALE,
-    radius=COLUMN_RADIUS_METERS,
-    pickable=True,
-    extruded=True,
+            - Slide to pick an **hour window** (e.g., 14 = 14:00–15:00).
+            - Each 3D column is anchored at a **neighborhood centroid**.
+            - Column height represents **call volume** in that hour.
+            """
+        )
 
-    get_fill_color="""
-        calls == %d
-        ? [220, 30, 30, 230]      
-        : [255, 223, 120, 200]    
-    """ % max_calls,
-)
+    # Aggregate + merge with centroids
+    calls_nb = agg_calls_by_hour_neighborhood(plot_df, hour_selected)
 
-view_state = pdk.ViewState(
-    latitude=center_lat,
-    longitude=center_lon,
-    zoom=DEFAULT_ZOOM,
-    pitch=DEFAULT_PITCH,
-)
+    # Merge data with centroids
+    merged = centroids.merge(
+        calls_nb,
+        left_on=NEIGHBORHOOD_COL_SHAPE,
+        right_on=NEIGHBORHOOD_COL_DATA,
+        how="left",
+    )
+    merged["calls"] = merged["calls"].fillna(0).astype(int)
 
-tooltip = {
-    "html": "<b>Neighborhood:</b> {" + NEIGHBORHOOD_COL_SHAPE + "}<br/><b>Calls:</b> {calls}",
-    "style": {"backgroundColor": "white", "color": "black"},
+    # Center view
+    center_lat, center_lon = overall_center(centroids)
+
+    st.write(f"**All Seattle from {hour_selected}:00 to {(hour_selected + 1) % 24}:00**")
+
+    # Pydeck layer
+    max_calls = merged["calls"].max()
+
+    layer = pdk.Layer(
+        "ColumnLayer",
+        data=merged,
+        get_position=["lon", "lat"],
+        get_elevation="calls",
+        elevation_scale=ELEVATION_SCALE,
+        radius=COLUMN_RADIUS_METERS,
+        pickable=True,
+        extruded=True,
+        get_fill_color="""
+            calls == %d
+            ? [220, 30, 30, 230]      
+            : [255, 223, 120, 200]    
+        """ % max_calls,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=center_lat,
+        longitude=center_lon,
+        zoom=DEFAULT_ZOOM,
+        pitch=DEFAULT_PITCH,
+    )
+
+    tooltip = {
+        "html": "<b>Neighborhood:</b> {" + NEIGHBORHOOD_COL_SHAPE + "}<br/><b>Calls:</b> {calls}",
+        "style": {"backgroundColor": "white", "color": "black"},
+    }
+
+    deck = pdk.Deck(
+        map_style=MAP_STYLE,
+        initial_view_state=view_state,
+        layers=[layer],
+        tooltip=tooltip,
+    )
+
+    st.pydeck_chart(deck, use_container_width=True)
+
+    # Add the heatmap
+    st.subheader("Behavioral / CARE Calls by Day and Hour")
+    st.image("../data/derived-data/heatmap_day_hour.png", use_column_width=True)
+
+# Add more pages as needed
+def another_page():
+    st.title("Another Page")
+    st.write("This is another page. You can add more content here.")
+
+# Map page names to functions
+PAGES = {
+    "Home": home_page,
+    "Call Time Analysis": call_time_page,  # Updated page name
+    "Another Page": another_page,
 }
 
-deck = pdk.Deck(
-    map_style=MAP_STYLE,
-    initial_view_state=view_state,
-    layers=[layer],
-    tooltip=tooltip,
-)
+# Sidebar navigation
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", options=list(PAGES.keys()))
 
-st.pydeck_chart(deck, use_container_width=True)
+# Render the selected page
+PAGES[page]()
