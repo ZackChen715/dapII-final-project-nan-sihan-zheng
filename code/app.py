@@ -8,9 +8,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import altair as alt
 
-mapbox_token = st.secrets["MAPBOX_API_KEY"]
-os.environ["MAPBOX_API_KEY"] = mapbox_token
-
 # Import the plotting functions
 from plot_nationwide_map import plot_nationwide_map
 from plot_nationwide_call_type import plot_nationwide_call_type
