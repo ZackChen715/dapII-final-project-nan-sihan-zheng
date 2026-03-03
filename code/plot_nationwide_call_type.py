@@ -7,7 +7,6 @@ def plot_nationwide_call_type(save_path=None):
     # Load data
     script_dir = Path(__file__).parent
     df_call = script_dir / "../data/derived-data/nationwide_long.csv"
-    save_path = script_dir / "../data/derived-data/call_category_chart.png" 
     df = pd.read_csv(df_call)
     CALL_CATEGORY_COL = "Call Categories"
 

@@ -244,9 +244,8 @@ def home_page():
 
     # Second chart: Call Categories
     st.write("### CARE primarily responding to nation-wide behavioral and psychological crisis")
-    plot_nationwide_call_type()  # Call the function to generate the chart
-    image2_path = script_dir / "../data/derived-data/call_category_chart.png"
-    st.image(image2_path)
+    call_type_chart = plot_nationwide_call_type()
+    st.altair_chart(call_type_chart)
 
 def call_time_page():
     # Top layout
