@@ -8,4 +8,4 @@ pyproj
 fiona
 altair
 matplotlib.pyplot
-Ploty
+plotly
