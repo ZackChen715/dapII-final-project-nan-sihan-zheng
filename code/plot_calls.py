@@ -16,15 +16,22 @@ call_group = (call_clean
               )
 
 neigh_gdf = gpd.read_file(raw_neigh)
-
-plot_df = neigh_gdf.merge(call_group,how='left',
-                          left_on='L_HOOD',
-                          right_on='neighborhood').fillna(0)
+neigh_gdf.crs
+plot_df = (
+    neigh_gdf.merge(
+        call_group,
+        how='left',
+        left_on='L_HOOD',
+        right_on='neighborhood',
+    )
+    .fillna(0)
+    .reset_index(drop=True)
+)
 
 
 fig, ax = plt.subplots(figsize=(9, 9))
 
-plot_df.plot(
+ax = plot_df.plot(
     column='n_calls',
     cmap='Reds',
     scheme='quantiles',
@@ -61,17 +68,9 @@ ax.set_title("Number of CARE Calls by Large Neighborhood in Seattle", fontsize=1
 ax.axis('off')
 
 plt.savefig(
-    script_dir / '../data/derived-data/calls_Seattle_enhanced.png',
-    dpi=300,
-    bbox_inches='tight'
-)
-
-plt.show()
-
-plt.savefig(
     script_dir / '../data/derived-data/calls_Seattle.png',
     dpi=300,
-    bbox_inches="tight"
+    bbox_inches='tight'
 )
 
 plt.show()

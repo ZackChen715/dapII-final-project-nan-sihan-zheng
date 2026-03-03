@@ -2,11 +2,13 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from pathlib import Path
 from shapely.affinity import scale, translate
 
-BASEMAP_GEOJSON_PATH = "../data/raw-data/us-states.json"
-POINTS_DATA_PATH     = "../data/raw-data/Map-Data-as-of-Sep16-25.csv"
-OUTPUT_PNG_PATH      = "../data/derived-data/national_programs_map.png"
+script_dir = Path(__file__).parent
+BASEMAP_GEOJSON_PATH = script_dir / "../data/raw-data/us-states.json"
+POINTS_DATA_PATH     = script_dir / "../data/raw-data/Map-Data-as-of-Sep16-25.csv"
+OUTPUT_PNG_PATH      = script_dir / "../data/derived-data/national_programs_map.png"
 
 LAT_COL   = "Latitude"
 LON_COL   = "Longitude"
