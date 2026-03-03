@@ -5,11 +5,11 @@ import geopandas as gpd
 import pydeck as pdk
 import streamlit as st
 from pathlib import Path
-from pathlib import Path
-
-# Import necessary libraries for plotting
 import matplotlib.pyplot as plt
 import altair as alt
+
+mapbox_token = st.secrets["MAPBOX_API_KEY"]
+os.environ["MAPBOX_API_KEY"] = mapbox_token
 
 # Import the plotting functions
 from plot_nationwide_map import plot_nationwide_map
