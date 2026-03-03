@@ -12,6 +12,9 @@ import plotly.express as px
 # Import the plotting functions
 from plot_nationwide_call_type import plot_nationwide_call_type
 
+mapbox_token = st.secrets["MAPBOX_API_KEY"]
+os.environ["MAPBOX_API_KEY"] = mapbox_token
+
 st.set_page_config(
     layout="wide",
     page_title="Seattle CARE Calls Dashboard",
