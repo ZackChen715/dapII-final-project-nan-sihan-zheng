@@ -7,5 +7,5 @@ shapely
 pyproj
 fiona
 altair
-matplotlib.pyplot
+matplotlib
 plotly
