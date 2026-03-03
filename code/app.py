@@ -385,7 +385,7 @@ def geo_plot_page():
         lonaxis_range=[minx - pad_x, maxx + pad_x],
         lataxis_range=[miny - pad_y, maxy + pad_y],
     )
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=600, autosize=False)
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=700, autosize=False)
 
     left, right = st.columns((3, 2))
     with left:
