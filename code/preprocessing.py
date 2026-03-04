@@ -219,7 +219,9 @@ CATEGORY_KEYWORDS = {
         "DISPUTE",
         "FIGHT",
         "ASSAULT",
+        "ASLT",
         "DOMESTIC",
+        "DV",
         "THREAT",
         "FAMILY DISTURBANCE",
         "NEIGHBOR DISPUTE"
@@ -234,6 +236,97 @@ CATEGORY_KEYWORDS = {
         "SOCIAL",
         "SERVICES",
         "REQUEST FOR RESOURCES"
+    ],
+
+    "Nuisance":[
+        "NUISANCE"
+    ],
+
+    "Animal Issues": [
+        "ANIMAL",
+        "STRAY",
+        "BITE"
+    ],
+
+    "Fire/Arson": [
+        "ARSON",
+        "BOMB",
+        "EXPLO",
+        "RECKLESS BURNING",
+        "FIRE"
+    ],
+
+    "Violent Crime": [
+        "HOMICIDE",
+        "KIDNAP",
+        "ROBBERY",
+        "DRIVE BY",
+        "SHOOTING"
+    ],
+
+    "Property Crime": [
+        "BURGLARY",
+        "THEFT",
+        "AUTO THEFT",
+        "CAR PROWL",
+        "SHOPLIFT",
+        "PROPERTY DEST",
+        "GRAFFITI",
+        "MISCHIEF"
+    ],
+
+    "Sexual Offense": [
+        "RAPE",
+        "SEX OFFENSE",
+        "LEWD",
+        "MOLEST",
+        "PROSTITUTION"
+    ],
+
+    "Missing/Found Person": [
+        "MISSING",
+        "FOUND PERSON",
+        "RUNAWAY",
+        "ABANDONED",
+        "ENDANGERMENT"
+    ],
+
+    "Traffic": [
+        "TRAFFIC",
+        "D.U.I",
+        "DUI",
+        "MOVING VIOLATION",
+        "PARKING VIOL",
+        "MV COLLISION",
+        "MVC",
+        "COLLISION",
+        "BLOCKING ROADWAY",
+        "BLOCKING TRAFFIC"
+    ],
+
+    "Weapons": [
+        "WEAPON",
+        "GUN"
+    ],
+
+    "Warrants/Legal": [
+        "WARRANT",
+        "COURT ORDER"
+    ],
+
+    "Administrative": [
+        "ASSIGNED DUTY",
+        "DIRECTED PATROL",
+        "OFF DUTY",
+        "FOLLOW UP",
+        "CCR ONLY",
+        "COMMUNITY PRESENCE",
+        "DETAIL BY SUPERVISOR",
+        "OFF DUTY EMPLOYMENT"
+    ],
+
+    "Hazards": [
+        "HAZARD"
     ]
 }
 
