@@ -12,6 +12,9 @@ import plotly.express as px
 # Import the plotting functions
 from plot_nationwide_call_type import plot_nationwide_call_type
 
+mapbox_token = st.secrets["MAPBOX_API_KEY"]
+os.environ["MAPBOX_API_KEY"] = mapbox_token
+
 st.set_page_config(
     layout="wide",
     page_title="Seattle CARE Calls Dashboard",
@@ -382,7 +385,7 @@ def geo_plot_page():
         lonaxis_range=[minx - pad_x, maxx + pad_x],
         lataxis_range=[miny - pad_y, maxy + pad_y],
     )
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=750, autosize=False)
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=700, autosize=False)
 
     left, right = st.columns((3, 2))
     with left:
