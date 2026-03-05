@@ -13,8 +13,8 @@ from plot_nationwide_call_type import plot_nationwide_call_type
 ### p.s. export MAPBOX_API_KEY="your_token_here"
 ### For deploying use, the following code reads the token from Streamlit secrets and sets it as an environment variable for pydeck to use.
 ### If you want to run streamlit app locally, the following code will cause an error, so you need to remove it.
-### mapbox_token = st.secrets["MAPBOX_API_KEY"]
-### os.environ["MAPBOX_API_KEY"] = mapbox_token
+mapbox_token = st.secrets["MAPBOX_API_KEY"]
+os.environ["MAPBOX_API_KEY"] = mapbox_token
 
 ### Path definitions and constants variables
 script_dir = Path(__file__).parent
