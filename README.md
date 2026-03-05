@@ -60,16 +60,6 @@ code/
    python code/plot_nationwide_map.py
    ```
 
-3. Run the Streamlit dashboard:
-   ```bash
-   streamlit run code/app.py
-   ```
-
-   Note: `code/app.py` uses Mapbox for the 3D map. Set your token before running:
-   ```bash
-   export MAPBOX_API_KEY="your_token_here"
-   ```
-
 ## Special Note for local Dashboard
 Since the project use **Mapbox** for map rendering, it need to set up a Mapbox access token to run the code locally.
 
