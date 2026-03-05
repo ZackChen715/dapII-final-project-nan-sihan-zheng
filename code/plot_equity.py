@@ -1,8 +1,11 @@
 import geopandas as gpd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
-shp_path = "raw data/Race_and_Social_Equity_Composite_Index_Current_68176633384735789/Racial_and_Social_Equity_Index_for_Countywide_2020_Census_Tracts.shp"
-gdf = gpd.read_file(shp_path)
+script_dir = Path(__file__).parent
+
+shp_call = script_dir / '../data/raw-data/equity_geodata/Racial_and_Social_Equity_Index_for_Countywide_2020_Census_Tracts.shp'
+gdf = gpd.read_file(shp_call)
 
 print("Columns:", list(gdf.columns))
 
@@ -34,7 +37,7 @@ gdf.plot(
 ax.set_title("Seattle Socioeconomic Disadvantage Score (0–1)", fontsize=14)
 ax.set_axis_off()
 
-out_path = "Plot/seattle_ses_disadv_heatmap.png"
+out_path = script_dir / '../data/derived-data/equity_score_map.png'
 plt.tight_layout()
 plt.savefig(out_path, bbox_inches="tight")
 plt.show()

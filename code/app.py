@@ -5,32 +5,31 @@ import geopandas as gpd
 import pydeck as pdk
 import streamlit as st
 from pathlib import Path
-import matplotlib.pyplot as plt
 import altair as alt
 import plotly.express as px
-
-# Import the plotting functions
 from plot_nationwide_call_type import plot_nationwide_call_type
 
+### NOTE：Since the project use **Mapbox** for map rendering, it need to set up a Mapbox access token to run the code locally.
+### p.s. export MAPBOX_API_KEY="your_token_here"
+### For deploying use, the following code reads the token from Streamlit secrets and sets it as an environment variable for pydeck to use.
+### If you want to run streamlit app locally, the following code will cause an error, so you need to remove it.
 mapbox_token = st.secrets["MAPBOX_API_KEY"]
 os.environ["MAPBOX_API_KEY"] = mapbox_token
 
-st.set_page_config(
-    layout="wide",
-    page_title="Seattle CARE Calls Dashboard",
-    page_icon="☎️",
-)
-
+### Path definitions and constants variables
 script_dir = Path(__file__).parent
 PLOT_DF_PATH = script_dir / '../data/derived-data/call_clean.csv'                 
 NEIGHBORHOODS_SHP_PATH = script_dir / '../data/raw-data/Neighborhood_geo/Neighborhood_Map_Atlas_Districts.shp'
 NATIONWIDE_POINTS_PATH = script_dir / '../data/raw-data/Map-Data-as-of-Sep16-25.csv'
+EQUITY_SHP_PATH = script_dir / '../data/raw-data/equity_geodata/Racial_and_Social_Equity_Index_for_Countywide_2020_Census_Tracts.shp'
+EQUITY_SCORE_COL = "SOCIOECO_1"
 
 HOUR_COL = "hour"
 NEIGHBORHOOD_COL_DATA = "neighborhood"       
 NEIGHBORHOOD_COL_SHAPE = "L_HOOD"      
 
 DT_CANDIDATES = ["dispatch_datetime", "dispatch_time", "timestamp", "datetime", "date_time"]
+DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 MAP_STYLE = "mapbox://styles/mapbox/dark-v11"
 DEFAULT_ZOOM = 10.8
@@ -40,7 +39,7 @@ COLUMN_RADIUS_METERS = 260
 ELEVATION_SCALE = 35           
 CALL_THRESHOLD = 3000
 
-# loaders
+### loaders and preprocessing functions
 @st.cache_data
 def load_plot_df(path: str) -> pd.DataFrame:
     if not os.path.isfile(path):
@@ -86,8 +85,6 @@ def load_neighborhood_centroids(shp_path: str) -> pd.DataFrame:
             f"Available columns: {list(gdf.columns)}"
         )
 
-    # Use a projected CRS to compute centroids more accurately, then convert back to WGS84
-    # If gdf has no CRS, assume it's already WGS84.
     if gdf.crs is None:
         gdf = gdf.set_crs(epsg=4326)
 
@@ -135,6 +132,36 @@ def calls_per_minute_in_hour(df: pd.DataFrame, hour_selected: int) -> pd.DataFra
 
 
 @st.cache_data
+def calls_by_day_hour(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Count calls by day of week and hour for heatmap.
+    """
+    if "dayofweek" not in df.columns:
+        return pd.DataFrame()
+
+    d = df.copy()
+    d["dayofweek"] = d["dayofweek"].astype(str)
+    d = d[d["dayofweek"].isin(DAY_ORDER)]
+
+    grouped = (
+        d.groupby(["dayofweek", HOUR_COL])
+         .size()
+         .reset_index(name="calls")
+    )
+    full_index = pd.MultiIndex.from_product(
+        [DAY_ORDER, range(24)],
+        names=["dayofweek", HOUR_COL],
+    )
+    grouped = (
+        grouped.set_index(["dayofweek", HOUR_COL])
+        .reindex(full_index, fill_value=0)
+        .reset_index()
+    )
+    grouped[HOUR_COL] = grouped[HOUR_COL].astype(int)
+    return grouped
+
+
+@st.cache_data
 def overall_center(centroids: pd.DataFrame) -> tuple[float, float]:
     return float(np.average(centroids["lat"])), float(np.average(centroids["lon"]))
 
@@ -154,7 +181,28 @@ def load_neighborhood_geo(shp_path: str) -> gpd.GeoDataFrame:
         )
 
     gdf[NEIGHBORHOOD_COL_SHAPE] = gdf[NEIGHBORHOOD_COL_SHAPE].astype(str)
-    # Plotly expects GeoJSON in WGS84; reproject if needed.
+    if gdf.crs is None:
+        gdf = gdf.set_crs(epsg=4326)
+    else:
+        gdf = gdf.to_crs(epsg=4326)
+    return gdf
+
+
+@st.cache_data
+def load_equity_geo(shp_path: str) -> gpd.GeoDataFrame:
+    if not os.path.isfile(shp_path):
+        raise FileNotFoundError(f"Cannot find {shp_path}. Please put shp here or update EQUITY_SHP_PATH.")
+
+    gdf = gpd.read_file(shp_path)
+    gdf.columns = [c.strip() for c in gdf.columns]
+
+    if EQUITY_SCORE_COL not in gdf.columns:
+        raise ValueError(
+            f"Equity shp missing column '{EQUITY_SCORE_COL}'. "
+            f"Available columns: {list(gdf.columns)}"
+        )
+
+    gdf[EQUITY_SCORE_COL] = pd.to_numeric(gdf[EQUITY_SCORE_COL], errors="coerce")
     if gdf.crs is None:
         gdf = gdf.set_crs(epsg=4326)
     else:
@@ -193,16 +241,19 @@ plot_df = load_plot_df(PLOT_DF_PATH)
 centroids = load_neighborhood_centroids(NEIGHBORHOODS_SHP_PATH)
 nationwide_points = load_nationwide_points(NATIONWIDE_POINTS_PATH)
 
-# Define individual pages as functions
+### Dashboard setup and design
+st.set_page_config(
+    layout="wide",
+    page_title="Seattle CARE Calls Dashboard",
+    page_icon="☎️",
+)
+
+### Define the main page and sidebar content
 def home_page():
     st.title("Welcome to the Seattle CARE Calls Dashboard☎️")
     st.write(
         """
         This application provides insights into Seattle CARE calls data.
-
-        ## User Guide 🧭
-        - Use the **Dashboard** page to explore the number of CARE call across different time preiod.
-        - Hover over the 3D map at **Care Call Map** to view details of CARE CAll about each neighborhood.
 
         ## Introduction to CARE 
         - Full Name: Community Assistance & Response Engagement
@@ -210,6 +261,13 @@ def home_page():
         - Co-response with behavioral health professionals 
         - Designed to respond to mental health crises 
         - Reduce reliance on traditional police response
+        """
+    )
+    st.sidebar.info(
+        """
+        **User Guide 🧭**
+        - Use the **Call Time Analysis** page to explore the number of CARE call across different time preiod.
+        - Hover over the 3D map at **Geographical Analysis (Neighorhood-level)** to view details of CARE CAll about each neighborhood.
         """
     )
     st.sidebar.success("You are on the Home page.")
@@ -231,8 +289,6 @@ def home_page():
             "Launch Year": True,
             "Responder Type": True,
             "Dispatch method": True,
-            "Latitude": False,
-            "Longitude": False,
         },
         color_discrete_map={
             f"More than {CALL_THRESHOLD:,} calls/year": "#f1c40f",
@@ -241,8 +297,29 @@ def home_page():
         },
         scope="usa",
     )
-    fig.update_traces(marker=dict(size=10, line=dict(width=1, color="black")))
-    fig.update_layout(legend_title_text="", margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    fig.update_traces(
+        marker=dict(size=10, line=dict(width=1, color="black")),
+        hovertemplate="<b>%{hovertext}</b><br>Call Bucket: %{marker.color}<extra></extra>",
+    )
+    fig.update_layout(
+        legend_title_text="",
+        legend=dict(font=dict(size=14)),
+        margin={"r": 0, "t": 10, "l": 0, "b": 0},
+    )
+    fig.update_geos(
+        showland=True,
+        landcolor="#f6f2e8",
+        showlakes=True,
+        lakecolor="#dbe9f6",
+        showocean=True,
+        oceancolor="#eaf2fb",
+        showcountries=True,
+        countrycolor="#c4c4c4",
+        showsubunits=True,
+        subunitcolor="#d0d0d0",
+        coastlinecolor="#c9c9c9",
+        projection_type="albers usa",
+    )
     st.plotly_chart(fig, use_container_width=True)
 
     # Second chart: Call Categories
@@ -250,12 +327,13 @@ def home_page():
     call_type_chart = plot_nationwide_call_type()
     st.altair_chart(call_type_chart)
 
+### Call Time Analysis page
 def call_time_page():
     # Top layout
     row1_left, row1_right = st.columns((2, 3))
 
     with row1_left:
-        st.title("Seattle CARE Calls Dashboard")
+        st.title("Seattle CARE Calls Dashboard - Call Time Analysis")
         hour_selected = st.slider(
             "Select hour of dispatch",
             min_value=0,
@@ -335,13 +413,30 @@ def call_time_page():
 
     # Add the heatmap
     st.subheader("Behavioral / CARE Calls by Day and Hour")
-    script_dir = Path(__file__).parent
-    image3_path = script_dir / "../data/derived-data/heatmap_day_hour.png"
-    st.image(image3_path)
+    heat_df = calls_by_day_hour(plot_df)
+    if heat_df.empty:
+        st.info("No day-of-week data available to render the heatmap.")
+    else:
+        heat_chart = (
+            alt.Chart(heat_df)
+            .mark_rect()
+            .encode(
+                x=alt.X(f"{HOUR_COL}:O", title="Hour of Day", axis=alt.Axis(labelAngle=0)),
+                y=alt.Y("dayofweek:O", sort=DAY_ORDER, title="Day of Week"),
+                color=alt.Color("calls:Q", title="Calls", scale=alt.Scale(scheme="goldred")),
+                tooltip=[
+                    alt.Tooltip("dayofweek:O", title="Day"),
+                    alt.Tooltip(f"{HOUR_COL}:O", title="Hour"),
+                    alt.Tooltip("calls:Q", title="Calls"),
+                ],
+            )
+            .properties(height=280)
+        )
+        st.altair_chart(heat_chart, use_container_width=True)
 
-# Add more pages as needed
+# Add geo plot page
 def geo_plot_page():
-    st.title("CARE Calls by Neighborhood")
+    st.title("Seattle CARE Calls Dashboard - Geographical Analysis (Neighborhood-level)")
     st.write("Hover to see neighborhood name and call count.")
     st.write(
         "This map shows total CARE call volume by neighborhood. "
@@ -349,9 +444,20 @@ def geo_plot_page():
         "hotspots against the equity index map on the right."
     )
 
+    neighborhood_options = ["All Neighborhoods"] + sorted(
+        plot_df[NEIGHBORHOOD_COL_DATA].dropna().astype(str).unique().tolist()
+    )
+    selected_neighborhood = st.selectbox("Select Neighborhood", neighborhood_options)
+    filtered_df = (
+        plot_df
+        if selected_neighborhood == "All Neighborhoods"
+        else plot_df[plot_df[NEIGHBORHOOD_COL_DATA] == selected_neighborhood]
+    )
+
     gdf = load_neighborhood_geo(NEIGHBORHOODS_SHP_PATH)
+    equity_gdf = load_equity_geo(EQUITY_SHP_PATH)
     call_counts = (
-        plot_df.groupby(NEIGHBORHOOD_COL_DATA)
+        filtered_df.groupby(NEIGHBORHOOD_COL_DATA)
         .size()
         .reset_index(name="n_calls")
     )
@@ -391,8 +497,46 @@ def geo_plot_page():
     with left:
         st.plotly_chart(fig, use_container_width=True)
     with right:
-        equity_img = Path(__file__).parent / "../data/derived-data/seattle_ses_disadv_heatmap.png"
-        st.image(equity_img, caption="Seattle Socioeconomic Disadvantage Score (0–1)")
+        equity_filtered = equity_gdf
+        if selected_neighborhood != "All Neighborhoods":
+            neighborhood_row = gdf[gdf[NEIGHBORHOOD_COL_SHAPE] == selected_neighborhood]
+            if not neighborhood_row.empty:
+                neighborhood_geom = neighborhood_row.iloc[0].geometry
+                equity_filtered = equity_gdf[equity_gdf.intersects(neighborhood_geom)]
+            else:
+                equity_filtered = equity_gdf.iloc[0:0]
+
+        if equity_filtered.empty:
+            st.info("No equity data available for the selected neighborhood.")
+        else:
+            equity_geojson = equity_filtered.__geo_interface__
+            eq_minx, eq_miny, eq_maxx, eq_maxy = equity_filtered.total_bounds
+            eq_pad_x = (eq_maxx - eq_minx) * 0.08
+            eq_pad_y = (eq_maxy - eq_miny) * 0.08
+            equity_fig = px.choropleth(
+                equity_filtered,
+                geojson=equity_geojson,
+                locations=equity_filtered.index,
+                color=EQUITY_SCORE_COL,
+                color_continuous_scale="YlOrRd",
+                hover_data={EQUITY_SCORE_COL: True},
+            )
+            equity_fig.update_geos(
+                visible=False,
+                projection_type="mercator",
+                lonaxis_range=[eq_minx - eq_pad_x, eq_maxx + eq_pad_x],
+                lataxis_range=[eq_miny - eq_pad_y, eq_maxy + eq_pad_y],
+            )
+            equity_fig.update_layout(
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                height=700,
+                autosize=False,
+            )
+            st.plotly_chart(equity_fig, use_container_width=True)
+            equity_caption = "Seattle Socioeconomic Disadvantage Score (0–1)"
+            if selected_neighborhood != "All Neighborhoods":
+                equity_caption = f"{equity_caption} | {selected_neighborhood}"
+            st.caption(equity_caption)
 
     col_left, col_right = st.columns(2)
     with col_left:
@@ -406,6 +550,8 @@ def geo_plot_page():
         - Foreign born (weight: 0.5)
                  
         **2.Socioeconomic Disadvantage Index**
+                 
+        **(This is the index we plotted on the right)**
 
         ranks census tracts by an index of two equally weighted measures:
         - Income below 200% of poverty level
@@ -429,8 +575,8 @@ def geo_plot_page():
 # Map page names to functions
 PAGES = {
     "Home": home_page,
-    "Call Time Analysis": call_time_page,  # Updated page name
-    "CARE Calls Map": geo_plot_page,
+    "Call Time Analysis": call_time_page, 
+    "Geographical Analysis (Neighborhood-level)": geo_plot_page,
 }
 
 # Sidebar navigation
