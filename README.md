@@ -83,7 +83,5 @@ For **deploying use**, the following code in the app.py reads the token from Str
 
 **If you want to run streamlit app locally, the following code will cause an error. For running the local dashboard successfully, you need to remove the following code in app.py:**
 
-```bash
 mapbox_token = st.secrets["MAPBOX_API_KEY"]
 os.environ["MAPBOX_API_KEY"] = mapbox_token
-```
