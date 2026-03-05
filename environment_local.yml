@@ -1,0 +1,15 @@
+name: Seattle CARE Calls Analysis
+channels:
+  - conda-forge
+dependencies:
+  - altair
+  - fiona
+  - geopandas
+  - matplotlib
+  - numpy
+  - pandas
+  - plotly
+  - pydeck
+  - pyproj
+  - shapely
+  - streamlit
