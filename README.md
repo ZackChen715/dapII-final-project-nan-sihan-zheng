@@ -11,7 +11,7 @@ dashboard.
 ## Setup
 
 ```bash
-conda env create -f environment.yml
+conda env create -f environment_local.yml
 conda activate "Seattle CARE Calls Analysis"
 ```
 
