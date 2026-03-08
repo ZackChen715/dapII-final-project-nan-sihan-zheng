@@ -3,10 +3,7 @@ This is the student team repository for the final project from DAP II
 
 # Seattle CARE Calls Analysis
 
-This project analyzes Community Assistance & Response Engagement (CARE) calls in Seattle,
-combines neighborhood-level call data with equity indicators, and visualizes nationwide
-community responder programs. The outputs include static plots and an interactive Streamlit
-dashboard.
+This project analyzes incident-level Community Assistance & Response Engagement (CARE) calls in Seattle. The project began with data cleaning and standardization to reconcile inconsistent records and missing geographic identifiers. It then combines neighborhood-level call data with equity indicators and visualizes nationwide community responder programs. The outputs include static plots and an interactive Streamlit dashboard.
 
 ## Setup
 
