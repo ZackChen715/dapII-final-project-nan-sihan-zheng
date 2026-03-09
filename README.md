@@ -31,6 +31,9 @@ data/
     equity_score_map.png                # Equity index map
     national_programs_map.png           # Nationwide programs map
 code/
+  finalproject.html                     # Final write-up (html version)
+  finalproject.pdf                      # Final write-up (pdf version)
+  finalproject.qmd                      # Final write-up (qmd version)
   preprocessing.py                      # Clean and categorize call data
   plot_calls.py                         # Neighborhood map of CARE calls
   plot_time.py                          # Day/hour heatmap
